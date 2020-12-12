@@ -21,7 +21,13 @@
  * specifies it is X's turn first
 **/
 Piezas::Piezas()
+  : board(BOARD_ROWS), turn(X)
 {
+  for(int i = 0; i < BOARD_ROWS; i++)
+  {
+    for(int j = 0; j < BOARD_COLS; j++)
+      board[i].push_back(Blank);
+  }
 }
 
 /**
@@ -30,6 +36,12 @@ Piezas::Piezas()
 **/
 void Piezas::reset()
 {
+  turn = X;
+  for(int i = 0; i < BOARD_ROWS; i++)
+  {
+    for(int j = 0; j < BOARD_COLS; j++)
+      board[i][j] = Blank;
+  }
 }
 
 /**
@@ -42,7 +54,23 @@ void Piezas::reset()
 **/ 
 Piece Piezas::dropPiece(int column)
 {
-    return Blank;
+  Piece oldTurn = turn;
+  turn = (turn == X) ? O : X;
+  if(column < 0 || column >= BOARD_COLS)
+    return Invalid;
+
+  bool inserted = false;
+  for(int i = 0; i < BOARD_ROWS; i++)
+  {
+    if(board[i][column] == Blank)
+    {
+      board[i][column] = oldTurn;
+      inserted = true;
+      break;
+    }
+  }
+
+  return inserted ? oldTurn : Blank;
 }
 
 /**
@@ -51,7 +79,10 @@ Piece Piezas::dropPiece(int column)
 **/
 Piece Piezas::pieceAt(int row, int column)
 {
-    return Blank;
+  if(row < 0 || column < 0 || row >= BOARD_ROWS || column >= BOARD_COLS)
+    return Invalid;
+
+  return board[row][column];
 }
 
 /**
@@ -65,5 +96,50 @@ Piece Piezas::pieceAt(int row, int column)
 **/
 Piece Piezas::gameState()
 {
-    return Blank;
+  int maxLength = 1;
+  Piece maxPieceOwner = Blank;
+
+  for(int i = 0; i < BOARD_ROWS; i++)
+  {
+    for(int j = 0; j < BOARD_COLS; j++)
+    {
+      Piece piece = board[i][j];
+      if(piece == Blank)
+        return Invalid;//Any blank piece means incomplete game
+
+      //Check length going right
+      int lenH = 1;
+      for(int k = j + 1; k < BOARD_COLS; k++)
+      {
+        if(board[i][k] == piece)
+          lenH++;
+        else
+          break;
+      }
+
+      //Check length going down
+      int lenV = 1;
+      for(int k = i + 1; k < BOARD_ROWS; k++)
+      {
+        if(board[k][j] == piece)
+          lenV++;
+        else
+          break;
+      }
+
+      int len = lenH > lenV ? lenH : lenV;
+      if(len > maxLength)
+      {
+        maxLength = len;
+        maxPieceOwner = piece;
+      }
+      else if(len == maxLength)
+      {
+        if(maxPieceOwner != piece)
+          maxPieceOwner = Blank;//Blank indicates tie
+      }
+    }
+  }
+
+  return maxPieceOwner;
 }
